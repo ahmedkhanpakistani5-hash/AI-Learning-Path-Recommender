@@ -299,6 +299,33 @@ div[data-testid="stDownloadButton"] > button {
     border-radius: 11px;
     font-weight: 700;
 }
+/* CHANGE STREAMLIT TOP WHITE BAR TO ORANGE */
+[data-testid="stHeader"] {
+    background: linear-gradient(
+        90deg,
+        #b90f32 0%,
+        #ef3b2f 45%,
+        #ff8a2b 100%
+    ) !important;
+}
+
+[data-testid="stHeader"] button {
+    color: white !important;
+}
+
+[data-testid="stHeader"] svg {
+    color: white !important;
+    fill: white !important;
+}
+
+[data-testid="stDecoration"] {
+    background: linear-gradient(
+        90deg,
+        #b90f32 0%,
+        #ef3b2f 45%,
+        #ff8a2b 100%
+    ) !important;
+}
 
 [data-testid="stDataFrame"] {
     border-radius: 14px;
