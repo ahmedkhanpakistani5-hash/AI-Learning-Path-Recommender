@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import random
+import textwrap
 from sklearn.decomposition import TruncatedSVD
 
 # =========================================================
@@ -16,7 +17,17 @@ st.set_page_config(
 )
 
 # =========================================================
-# CUSTOM CSS
+# HTML HELPER
+# =========================================================
+
+def render_html(html):
+    st.markdown(
+        textwrap.dedent(html),
+        unsafe_allow_html=True
+    )
+
+# =========================================================
+# CSS
 # =========================================================
 
 st.markdown("""
@@ -31,14 +42,9 @@ html, body, [class*="css"] {
 .stApp {
     background:
         radial-gradient(
-            circle at 75% 5%,
+            circle at 80% 0%,
             rgba(239, 68, 68, 0.10),
-            transparent 25%
-        ),
-        radial-gradient(
-            circle at 30% 60%,
-            rgba(249, 115, 22, 0.06),
-            transparent 25%
+            transparent 28%
         ),
         #050b18;
     color: #f8fafc;
@@ -46,26 +52,19 @@ html, body, [class*="css"] {
 
 .block-container {
     max-width: 1500px;
-    padding-top: 1.5rem;
+    padding-top: 1.4rem;
     padding-bottom: 3rem;
 }
 
-/* =========================================================
-   SIDEBAR
-   ========================================================= */
+/* ================= SIDEBAR ================= */
 
 [data-testid="stSidebar"] {
-    background:
-        linear-gradient(
-            180deg,
-            #07101f 0%,
-            #050b17 100%
-        );
+    background: linear-gradient(
+        180deg,
+        #07101f 0%,
+        #050b17 100%
+    );
     border-right: 1px solid rgba(255,255,255,0.08);
-}
-
-[data-testid="stSidebar"] > div {
-    padding-top: 1.5rem;
 }
 
 .sidebar-logo {
@@ -80,8 +79,8 @@ html, body, [class*="css"] {
 .sidebar-logo-title {
     font-size: 22px;
     font-weight: 800;
-    margin-top: 4px;
     color: #f8fafc;
+    margin-top: 5px;
 }
 
 .sidebar-logo-title span {
@@ -91,7 +90,7 @@ html, body, [class*="css"] {
 .sidebar-subtitle {
     color: #7dd3fc;
     font-size: 11px;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 .sidebar-section {
@@ -101,64 +100,48 @@ html, body, [class*="css"] {
     letter-spacing: 1.5px;
     font-weight: 700;
     margin-top: 25px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
-/* =========================================================
-   HERO
-   ========================================================= */
+/* ================= HERO ================= */
 
 .hero {
-    min-height: 190px;
+    min-height: 175px;
     border-radius: 22px;
 
     background:
         radial-gradient(
             circle at 88% 35%,
-            rgba(255, 137, 41, 0.80),
+            rgba(255, 137, 41, 0.85),
             transparent 24%
         ),
         radial-gradient(
-            circle at 72% 100%,
+            circle at 70% 100%,
             rgba(220, 38, 38, 0.55),
-            transparent 32%
+            transparent 35%
         ),
         linear-gradient(
             120deg,
             #9f1239 0%,
-            #dc2626 35%,
-            #f97316 68%,
+            #dc2626 38%,
+            #f97316 72%,
             #c2410c 100%
         );
 
-    border: 1px solid rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.15);
 
     box-shadow:
         0 20px 60px rgba(0,0,0,0.35),
-        inset 0 1px 0 rgba(255,255,255,0.10);
+        inset 0 1px 0 rgba(255,255,255,0.12);
 
     padding: 30px 38px;
     margin-bottom: 22px;
-    position: relative;
-    overflow: hidden;
-}
-
-.hero:after {
-    content: "";
-    position: absolute;
-    width: 450px;
-    height: 450px;
-    right: -100px;
-    top: -220px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 50%;
 }
 
 .hero-title {
-    font-size: 39px;
+    font-size: 40px;
     font-weight: 800;
     color: white;
-    margin: 0;
 }
 
 .hero-title span {
@@ -167,40 +150,36 @@ html, body, [class*="css"] {
 
 .hero-subtitle {
     font-size: 16px;
-    color: rgba(255,255,255,0.92);
-    margin-top: 7px;
+    color: white;
+    margin-top: 6px;
 }
 
 .hero-description {
     font-size: 13px;
-    color: rgba(255,255,255,0.78);
-    margin-top: 14px;
+    color: rgba(255,255,255,0.82);
+    margin-top: 13px;
 }
 
-/* =========================================================
-   PROFILE BAR
-   ========================================================= */
+/* ================= PROFILE ================= */
 
 .profile-wrapper {
     background:
         linear-gradient(
             90deg,
             rgba(15,23,42,0.96),
-            rgba(15,23,42,0.72)
+            rgba(15,23,42,0.75)
         );
 
     border: 1px solid rgba(148,163,184,0.14);
     border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 20px;
 
-    box-shadow: 0 12px 35px rgba(0,0,0,0.18);
+    padding: 17px 20px;
+    margin-bottom: 12px;
 }
 
 .profile-title {
     font-size: 19px;
     font-weight: 700;
-    color: #f8fafc;
 }
 
 .profile-subtitle {
@@ -209,9 +188,7 @@ html, body, [class*="css"] {
     margin-top: 4px;
 }
 
-/* =========================================================
-   METRIC CARDS
-   ========================================================= */
+/* ================= METRICS ================= */
 
 .metric-card {
     background:
@@ -225,40 +202,36 @@ html, body, [class*="css"] {
     border-radius: 13px;
 
     padding: 14px 18px;
-
-    min-height: 72px;
+    min-height: 82px;
 
     box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.03),
         0 8px 20px rgba(0,0,0,0.15);
 }
 
+.metric-icon {
+    font-size: 19px;
+}
+
 .metric-number {
-    font-size: 24px;
+    font-size: 25px;
     font-weight: 800;
     color: #f8fafc;
+    margin-top: 3px;
 }
 
 .metric-label {
     color: #94a3b8;
     font-size: 10px;
-    margin-top: 3px;
 }
 
-.metric-icon {
-    font-size: 19px;
-}
-
-/* =========================================================
-   SECTION TITLE
-   ========================================================= */
+/* ================= SECTION ================= */
 
 .section-title {
-    font-size: 20px;
+    font-size: 21px;
     font-weight: 750;
-    color: #f8fafc;
-    margin-top: 22px;
-    margin-bottom: 2px;
+    margin-top: 25px;
+    margin-bottom: 3px;
 }
 
 .section-title span {
@@ -271,17 +244,15 @@ html, body, [class*="css"] {
     margin-bottom: 14px;
 }
 
-/* =========================================================
-   RECOMMENDATION CARDS
-   ========================================================= */
+/* ================= RECOMMENDATIONS ================= */
 
 .recommendation {
     display: flex;
     align-items: center;
 
-    min-height: 82px;
+    min-height: 78px;
 
-    padding: 12px 18px;
+    padding: 11px 17px;
 
     border-radius: 12px;
 
@@ -290,8 +261,8 @@ html, body, [class*="css"] {
     background:
         linear-gradient(
             90deg,
-            rgba(88, 16, 35, 0.82),
-            rgba(35, 17, 29, 0.82)
+            rgba(88,16,35,0.85),
+            rgba(35,17,29,0.82)
         );
 
     border: 1px solid rgba(244,63,94,0.65);
@@ -305,8 +276,8 @@ html, body, [class*="css"] {
     background:
         linear-gradient(
             90deg,
-            rgba(84, 39, 18, 0.82),
-            rgba(34, 23, 20, 0.82)
+            rgba(84,39,18,0.85),
+            rgba(34,23,20,0.82)
         );
 
     border-color: rgba(249,115,22,0.70);
@@ -316,8 +287,8 @@ html, body, [class*="css"] {
     background:
         linear-gradient(
             90deg,
-            rgba(69, 52, 17, 0.82),
-            rgba(34, 30, 18, 0.82)
+            rgba(69,52,17,0.85),
+            rgba(34,30,18,0.82)
         );
 
     border-color: rgba(234,179,8,0.70);
@@ -335,9 +306,9 @@ html, body, [class*="css"] {
 
     background: rgba(30,41,59,0.95);
 
-    font-size: 25px;
+    font-size: 24px;
 
-    margin-right: 16px;
+    margin-right: 15px;
 
     flex-shrink: 0;
 }
@@ -350,6 +321,7 @@ html, body, [class*="css"] {
     font-size: 15px;
     font-weight: 700;
     color: #f8fafc;
+    margin-top: 4px;
 }
 
 .course-meta {
@@ -361,7 +333,7 @@ html, body, [class*="css"] {
 .recommend-badge {
     display: inline-block;
 
-    padding: 5px 10px;
+    padding: 4px 9px;
 
     border-radius: 20px;
 
@@ -376,34 +348,30 @@ html, body, [class*="css"] {
 
     font-size: 9px;
     font-weight: 800;
-
-    margin-right: 12px;
 }
 
 .score {
-    min-width: 60px;
-    height: 38px;
+    min-width: 58px;
+    height: 37px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 18px;
+    border-radius: 20px;
 
-    background: rgba(255,255,255,0.09);
+    background: rgba(255,255,255,0.10);
 
     color: white;
 
     font-weight: 800;
-    font-size: 16px;
+    font-size: 15px;
 }
 
-/* =========================================================
-   DOWNLOAD BUTTON
-   ========================================================= */
+/* ================= DOWNLOAD ================= */
 
 .stDownloadButton {
-    margin-top: 13px;
+    margin-top: 14px;
 }
 
 .stDownloadButton > button {
@@ -425,7 +393,7 @@ html, body, [class*="css"] {
     box-shadow:
         0 10px 25px rgba(0,0,0,0.20) !important;
 
-    transition: all 0.2s ease !important;
+    transition: 0.2s ease !important;
 }
 
 .stDownloadButton > button:hover {
@@ -436,20 +404,14 @@ html, body, [class*="css"] {
     border-color: #fb923c !important;
 
     transform: translateY(-2px);
-
-    box-shadow:
-        0 14px 30px rgba(249,115,22,0.18) !important;
 }
 
-/* =========================================================
-   TABS
-   ========================================================= */
+/* ================= TABS ================= */
 
 .stTabs [data-baseweb="tab-list"] {
     gap: 3px;
 
-    background:
-        rgba(20,29,48,0.85);
+    background: rgba(20,29,48,0.85);
 
     border-radius: 12px;
 
@@ -480,9 +442,7 @@ html, body, [class*="css"] {
     color: #fed7aa !important;
 }
 
-/* =========================================================
-   SELECT BOX
-   ========================================================= */
+/* ================= SELECTBOX ================= */
 
 div[data-baseweb="select"] > div {
     background-color: #101a2e !important;
@@ -490,9 +450,7 @@ div[data-baseweb="select"] > div {
     color: white !important;
 }
 
-/* =========================================================
-   BUTTONS
-   ========================================================= */
+/* ================= BUTTON ================= */
 
 .stButton > button {
     border-radius: 10px;
@@ -522,9 +480,7 @@ div[data-baseweb="select"] > div {
     color: white;
 }
 
-/* =========================================================
-   AI CARD
-   ========================================================= */
+/* ================= AI CARD ================= */
 
 .ai-card {
     background:
@@ -543,9 +499,7 @@ div[data-baseweb="select"] > div {
     box-shadow: 0 15px 40px rgba(0,0,0,0.20);
 }
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
+/* ================= FOOTER ================= */
 
 .footer {
     text-align: center;
@@ -566,7 +520,7 @@ div[data-baseweb="select"] > div {
 
 
 # =========================================================
-# DATA
+# DEMO DATA
 # =========================================================
 
 @st.cache_data
@@ -627,18 +581,17 @@ def create_data():
 
     for intern in interns:
 
-        preferred = random.sample(
+        preferred_categories = random.sample(
             list(course_df["Category"].unique()),
             4
         )
 
         for _, course in course_df.iterrows():
 
-            probability = (
-                0.75
-                if course["Category"] in preferred
-                else 0.28
-            )
+            if course["Category"] in preferred_categories:
+                probability = 0.75
+            else:
+                probability = 0.28
 
             if random.random() < probability:
 
@@ -682,15 +635,15 @@ def train_model(data):
         random_state=42
     )
 
-    latent = model.fit_transform(matrix)
+    latent_matrix = model.fit_transform(matrix)
 
-    reconstructed = np.dot(
-        latent,
+    reconstructed_matrix = np.dot(
+        latent_matrix,
         model.components_
     )
 
     predictions = pd.DataFrame(
-        reconstructed,
+        reconstructed_matrix,
         index=matrix.index,
         columns=matrix.columns
     )
@@ -704,37 +657,30 @@ interaction_matrix, prediction_matrix = train_model(
 
 
 # =========================================================
-# RECOMMENDATIONS
+# RECOMMENDATION ENGINE
 # =========================================================
 
-def get_recommendations(
-    intern,
-    count=6
-):
+def get_recommendations(intern, count=6):
 
-    scores = prediction_matrix.loc[
-        intern
-    ].copy()
+    scores = prediction_matrix.loc[intern].copy()
 
-    completed = interaction_matrix.loc[
-        intern
-    ]
+    completed = interaction_matrix.loc[intern]
 
     scores[completed > 0] = -999
 
-    top = scores.sort_values(
+    top_courses = scores.sort_values(
         ascending=False
     ).head(count)
 
     result = []
 
-    for course, raw_score in top.items():
+    for course_name, raw_score in top_courses.items():
 
         info = course_df[
-            course_df["Course"] == course
+            course_df["Course"] == course_name
         ].iloc[0]
 
-        score = int(
+        recommendation_score = int(
             min(
                 98,
                 max(
@@ -745,24 +691,21 @@ def get_recommendations(
         )
 
         result.append({
-            "Course": course,
+            "Course": course_name,
             "Category": info["Category"],
             "Level": info["Level"],
             "Duration": info["Duration"],
-            "Score": score
+            "Score": recommendation_score
         })
 
     return pd.DataFrame(result)
 
 
 # =========================================================
-# GROQ
+# GROQ AI
 # =========================================================
 
-def generate_ai_plan(
-    intern,
-    recommendations
-):
+def generate_ai_plan(intern, recommendations):
 
     try:
 
@@ -778,49 +721,46 @@ def generate_ai_plan(
             return """
 ### 🔑 Groq API Key Required
 
-The recommendation engine is working correctly.
+The Matrix Factorization recommendation engine is working.
 
-Add your `GROQ_API_KEY` inside Streamlit Cloud:
-
-**App → Settings → Secrets**
+Add your `GROQ_API_KEY` inside Streamlit Secrets to
+enable the AI Learning Advisor.
 """
 
         client = Groq(
             api_key=api_key
         )
 
-        courses = "\n".join(
+        course_list = "\n".join(
             [
-                f"- {row['Course']} "
-                f"({row['Category']}, "
-                f"{row['Level']})"
+                f"- {row['Course']} | "
+                f"{row['Category']} | "
+                f"{row['Level']}"
                 for _, row in recommendations.iterrows()
             ]
         )
 
         prompt = f"""
-You are an AI learning advisor.
+You are an AI learning advisor for an internship program.
 
 Intern:
 {intern}
 
-The Matrix Factorization recommendation system generated
-the following personalized courses:
+The recommendation engine generated these learning modules:
 
-{courses}
+{course_list}
 
-Create a concise professional learning strategy.
+Create a concise personalized learning strategy.
 
 Include:
 
-1. Why these courses fit the intern.
-2. Recommended starting course.
-3. Skills the intern should gain.
+1. Why these modules fit the intern's learning pattern.
+2. Which course should be started first.
+3. Skills the intern can gain.
 4. A practical mini-project.
-5. A suggested learning order.
+5. Suggested learning order.
 
-Do not mention that you are guessing.
-Keep it practical and concise.
+Keep the response professional, practical and concise.
 """
 
         response = client.chat.completions.create(
@@ -829,7 +769,7 @@ Keep it practical and concise.
                 {
                     "role": "system",
                     "content": (
-                        "You are a professional internship "
+                        "You are a professional AI "
                         "learning advisor."
                     )
                 },
@@ -839,25 +779,23 @@ Keep it practical and concise.
                 }
             ],
             temperature=0.5,
-            max_completion_tokens=800,
-            include_reasoning=False
+            max_completion_tokens=800
         )
 
-        return response.choices[
-            0
-        ].message.content
+        return response.choices[0].message.content
 
     except Exception as error:
 
         return f"""
 ### ⚠️ AI Advisor Temporarily Unavailable
 
-The Matrix Factorization recommendations are still
-working correctly.
+Your Matrix Factorization recommendation system is
+still working.
 
 Please check your Groq API key and Streamlit Secrets.
 
-Technical status: `{type(error).__name__}`
+Technical error type:
+`{type(error).__name__}`
 """
 
 
@@ -865,25 +803,25 @@ Technical status: `{type(error).__name__}`
 # HERO
 # =========================================================
 
-st.markdown("""
+render_html("""
 <div class="hero">
 
-<div class="hero-title">
-🎓 LearnPath <span>AI</span>
-</div>
+    <div class="hero-title">
+        🎓 LearnPath <span>AI</span>
+    </div>
 
-<div class="hero-subtitle">
-Personalized learning paths powered by
-<strong>Matrix Factorization + Generative AI</strong>
-</div>
+    <div class="hero-subtitle">
+        Personalized learning paths powered by
+        <strong>Matrix Factorization + Generative AI</strong>
+    </div>
 
-<div class="hero-description">
-Turn previous intern learning behavior into a customized
-training journey.
-</div>
+    <div class="hero-description">
+        Turn previous intern learning behavior into a customized
+        training journey.
+    </div>
 
 </div>
-""", unsafe_allow_html=True)
+""")
 
 
 # =========================================================
@@ -892,7 +830,7 @@ training journey.
 
 with st.sidebar:
 
-    st.markdown("""
+    render_html("""
     <div class="sidebar-logo">
 
         <div class="sidebar-logo-icon">
@@ -908,49 +846,47 @@ with st.sidebar:
         </div>
 
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     st.markdown("### 🏠 Home")
 
-    st.markdown(
-        "👤 &nbsp; Intern Profile"
-    )
+    st.markdown("👤 &nbsp; Intern Profile")
 
-    st.markdown(
-        "📊 &nbsp; Learning Analytics"
-    )
+    st.markdown("📊 &nbsp; Learning Analytics")
 
-    st.markdown(
-        "🧠 &nbsp; AI Advisor"
-    )
+    st.markdown("🧠 &nbsp; AI Advisor")
 
-    st.markdown("""
+    render_html("""
     <div class="sidebar-section">
         AI Pipeline
     </div>
 
-    <div style="line-height:2.4; color:#94a3b8; font-size:13px;">
+    <div style="
+        line-height:2.5;
+        color:#94a3b8;
+        font-size:13px;
+    ">
 
-    <b style="color:#f97316;">1</b>
-    &nbsp; Learning history<br>
+        <b style="color:#f97316;">1</b>
+        &nbsp; Learning history<br>
 
-    <b style="color:#f97316;">2</b>
-    &nbsp; Interaction matrix<br>
+        <b style="color:#f97316;">2</b>
+        &nbsp; Interaction matrix<br>
 
-    <b style="color:#f97316;">3</b>
-    &nbsp; Matrix Factorization<br>
+        <b style="color:#f97316;">3</b>
+        &nbsp; Matrix Factorization<br>
 
-    <b style="color:#f97316;">4</b>
-    &nbsp; Course prediction<br>
+        <b style="color:#f97316;">4</b>
+        &nbsp; Course prediction<br>
 
-    <b style="color:#f97316;">5</b>
-    &nbsp; Personalized path<br>
+        <b style="color:#f97316;">5</b>
+        &nbsp; Personalized path<br>
 
-    <b style="color:#f97316;">6</b>
-    &nbsp; Groq AI explanation
+        <b style="color:#f97316;">6</b>
+        &nbsp; Groq AI explanation
 
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
     st.markdown("---")
 
@@ -961,14 +897,14 @@ with st.sidebar:
 
     recommendation_count = st.slider(
         "📚 Recommendations",
-        3,
-        10,
-        6
+        min_value=3,
+        max_value=10,
+        value=6
     )
 
 
 # =========================================================
-# PROFILE
+# PROFILE DATA
 # =========================================================
 
 recommendations = get_recommendations(
@@ -980,7 +916,7 @@ history = interactions[
     interactions["Intern"] == selected_intern
 ]
 
-avg_rating = round(
+average_rating = round(
     history["Rating"].mean(),
     1
 )
@@ -992,106 +928,110 @@ category_count = history["Course"].map(
 ).nunique()
 
 
-st.markdown("""
+# =========================================================
+# PROFILE HEADER
+# =========================================================
+
+render_html("""
 <div class="profile-wrapper">
 
-<div class="profile-title">
-👤 Intern Learning Profile
-</div>
+    <div class="profile-title">
+        👤 Intern Learning Profile
+    </div>
 
-<div class="profile-subtitle">
-Insights based on your past learning behavior
-</div>
+    <div class="profile-subtitle">
+        Insights based on your past learning behavior
+    </div>
 
 </div>
-""", unsafe_allow_html=True)
+""")
 
+
+# =========================================================
+# METRICS
+# =========================================================
 
 m1, m2, m3, m4 = st.columns(4)
 
 with m1:
 
-    st.markdown(
-        f"""
-        <div class="metric-card">
+    render_html(f"""
+    <div class="metric-card">
 
-        <div class="metric-icon">📖</div>
+        <div class="metric-icon">
+            📖
+        </div>
 
         <div class="metric-number">
-        {interaction_count}
+            {interaction_count}
         </div>
 
         <div class="metric-label">
-        Learning Interactions
+            Learning Interactions
         </div>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
 with m2:
 
-    st.markdown(
-        f"""
-        <div class="metric-card">
+    render_html(f"""
+    <div class="metric-card">
 
-        <div class="metric-icon">⭐</div>
+        <div class="metric-icon">
+            ⭐
+        </div>
 
         <div class="metric-number">
-        {avg_rating}/5
+            {average_rating}/5
         </div>
 
         <div class="metric-label">
-        Average Engagement
+            Average Engagement
         </div>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
 with m3:
 
-    st.markdown(
-        f"""
-        <div class="metric-card">
+    render_html(f"""
+    <div class="metric-card">
 
-        <div class="metric-icon">🧩</div>
+        <div class="metric-icon">
+            🧩
+        </div>
 
         <div class="metric-number">
-        {category_count}
+            {category_count}
         </div>
 
         <div class="metric-label">
-        Skill Categories
+            Skill Categories
         </div>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
 with m4:
 
-    st.markdown(
-        f"""
-        <div class="metric-card">
+    render_html(f"""
+    <div class="metric-card">
 
-        <div class="metric-icon">📚</div>
+        <div class="metric-icon">
+            📚
+        </div>
 
         <div class="metric-number">
-        {len(course_df)}
+            {len(course_df)}
         </div>
 
         <div class="metric-label">
-        Available Modules
+            Available Modules
         </div>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
 
 # =========================================================
@@ -1108,24 +1048,21 @@ tab1, tab2, tab3 = st.tabs(
 
 
 # =========================================================
-# RECOMMENDED PATH
+# TAB 1
 # =========================================================
 
 with tab1:
 
-    st.markdown(
-        """
-        <div class="section-title">
+    render_html("""
+    <div class="section-title">
         ✨ Your <span>Personalized Learning Path</span>
-        </div>
+    </div>
 
-        <div class="section-caption">
+    <div class="section-caption">
         Recommendations are generated from historical learning
         patterns using Matrix Factorization.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
     icons = [
         "🐍",
@@ -1138,7 +1075,7 @@ with tab1:
         "⚙️"
     ]
 
-    styles = [
+    card_styles = [
         "",
         "orange",
         "gold",
@@ -1149,66 +1086,65 @@ with tab1:
         ""
     ]
 
-    for i, (_, row) in enumerate(
+    for index, (_, row) in enumerate(
         recommendations.iterrows()
     ):
 
         icon = icons[
-            i % len(icons)
+            index % len(icons)
         ]
 
-        style = styles[
-            i % len(styles)
+        style = card_styles[
+            index % len(card_styles)
         ]
 
-        st.markdown(
-            f"""
-            <div class="recommendation {style}">
+        render_html(f"""
+        <div class="recommendation {style}">
 
-                <div class="course-icon">
-                    {icon}
+            <div class="course-icon">
+                {icon}
+            </div>
+
+            <div class="course-content">
+
+                <div>
+                    <span class="recommend-badge">
+                        #{index + 1} RECOMMENDED
+                    </span>
                 </div>
 
-                <div class="course-content">
-
-                    <div>
-
-                        <span class="recommend-badge">
-                        #{i + 1} RECOMMENDED
-                        </span>
-
-                    </div>
-
-                    <div class="course-name">
+                <div class="course-name">
                     {row['Course']}
-                    </div>
+                </div>
 
-                    <div class="course-meta">
+                <div class="course-meta">
                     {row['Category']}
                     &nbsp; | &nbsp;
                     {row['Level']}
                     &nbsp; | &nbsp;
                     {row['Duration']} weeks
-                    </div>
-
-                </div>
-
-                <div class="score">
-                    {row['Score']}%
                 </div>
 
             </div>
-            """,
-            unsafe_allow_html=True
-        )
 
-    csv = recommendations.to_csv(
+            <div class="score">
+                {row['Score']}%
+            </div>
+
+        </div>
+        """)
+
+    # =====================================================
+    # DOWNLOAD BUTTON
+    # =====================================================
+
+    csv_data = recommendations.to_csv(
         index=False
     ).encode("utf-8")
 
     st.download_button(
         label="📥  Download Learning Path",
-        data=csv,
+        data=csv_data,
         file_name=(
             f"{selected_intern}_"
             "personalized_learning_path.csv"
@@ -1219,25 +1155,24 @@ with tab1:
 
 
 # =========================================================
-# ANALYTICS
+# TAB 2
 # =========================================================
 
 with tab2:
 
-    st.markdown(
-        """
-        <div class="section-title">
+    render_html("""
+    <div class="section-title">
         📊 Learning <span>Analytics</span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
     left, right = st.columns(2)
 
     with left:
 
-        st.markdown("### 📚 Previous Learning Activity")
+        st.markdown(
+            "### 📚 Previous Learning Activity"
+        )
 
         history_table = history.merge(
             course_df,
@@ -1259,7 +1194,9 @@ with tab2:
 
     with right:
 
-        st.markdown("### 🧠 Category Engagement")
+        st.markdown(
+            "### 🧠 Category Engagement"
+        )
 
         category_data = history_table.groupby(
             "Category"
@@ -1271,35 +1208,29 @@ with tab2:
 
 
 # =========================================================
-# AI ADVISOR
+# TAB 3
 # =========================================================
 
 with tab3:
 
-    st.markdown(
-        """
-        <div class="section-title">
+    render_html("""
+    <div class="section-title">
         🧠 AI <span>Learning Advisor</span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
 
-    st.markdown(
-        """
-        <div class="ai-card">
+    <div class="ai-card">
 
-        <h3>🤖 Personalized AI Strategy</h3>
+        <h3>
+            🤖 Personalized AI Strategy
+        </h3>
 
         <p style="color:#94a3b8;">
-        Groq analyzes the recommended learning path and
-        converts it into a practical internship strategy.
+            Groq converts the recommendation engine's
+            results into a practical learning strategy.
         </p>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """)
 
     st.write("")
 
@@ -1312,21 +1243,20 @@ with tab3:
             "AI advisor is preparing your learning strategy..."
         ):
 
-            result = generate_ai_plan(
+            ai_result = generate_ai_plan(
                 selected_intern,
                 recommendations
             )
 
-        st.markdown(result)
+        st.markdown(ai_result)
 
 
 # =========================================================
 # FOOTER
 # =========================================================
 
-st.markdown(
-    """
-    <div class="footer">
+render_html("""
+<div class="footer">
 
     🎓 LearnPath AI
     &nbsp; • &nbsp;
@@ -1336,7 +1266,5 @@ st.markdown(
     &nbsp; • &nbsp;
     Groq AI
 
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+</div>
+""")
