@@ -1,28 +1,35 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import random
 import os
-from sklearn.decomposition import TruncatedSVD
+import io
+import numpy as np
+import pandas as pd
+import streamlit as st
 
-# =========================================================
+# Optional AI layer
+try:
+    from groq import Groq
+    GROQ_AVAILABLE = True
+except ImportError:
+    GROQ_AVAILABLE = False
+
+from sklearn.preprocessing import MinMaxScaler
+
+
+# ============================================================
 # PAGE CONFIG
-# =========================================================
-
+# ============================================================
 st.set_page_config(
     page_title="LearnPath AI",
     page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# =========================================================
-# DARK GLASS UI
-# =========================================================
 
+# ============================================================
+# THEME / CSS
+# ============================================================
 st.markdown("""
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 html, body, [class*="css"] {
@@ -31,1172 +38,1140 @@ html, body, [class*="css"] {
 
 .stApp {
     background:
-        radial-gradient(
-            circle at 85% 5%,
-            rgba(249,115,22,0.10),
-            transparent 25%
-        ),
-        radial-gradient(
-            circle at 5% 80%,
-            rgba(168,85,247,0.08),
-            transparent 25%
-        ),
-        #060b16;
-    color: #f8fafc;
+        radial-gradient(circle at 78% 3%, rgba(255, 91, 38, .12), transparent 25%),
+        radial-gradient(circle at 30% 30%, rgba(94, 53, 177, .08), transparent 28%),
+        #060d1b;
+    color: #eef4ff;
 }
-
-.block-container {
-    max-width: 1500px;
-    padding: 25px 35px 50px 35px;
-}
-
-/* SIDEBAR */
 
 [data-testid="stSidebar"] {
-    background:
-        linear-gradient(
-            180deg,
-            #080f1e 0%,
-            #050914 100%
-        );
-    border-right: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, #071120 0%, #081426 55%, #050b16 100%);
+    border-right: 1px solid rgba(125, 151, 190, .18);
 }
 
 [data-testid="stSidebar"] * {
-    color: #cbd5e1;
+    color: #dce8fb;
 }
 
-/* HERO */
+.block-container {
+    padding-top: 1.2rem;
+    padding-bottom: 2rem;
+    max-width: 1500px;
+}
 
-.hero-box {
-    background:
-        linear-gradient(
-            110deg,
-            #9f1239 0%,
-            #dc2626 38%,
-            #f97316 72%,
-            #ea580c 100%
-        );
-
+.hero {
+    min-height: 150px;
     border-radius: 24px;
-    padding: 34px 40px;
-    margin-bottom: 22px;
+    padding: 28px 34px;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 85% 30%, rgba(255, 170, 55, .35), transparent 24%),
+        radial-gradient(circle at 60% 85%, rgba(255, 56, 102, .28), transparent 35%),
+        linear-gradient(110deg, #9f092d 0%, #dc263b 34%, #ff6929 72%, #ff9c2e 100%);
+    box-shadow: 0 18px 45px rgba(255, 74, 42, .16);
+    border: 1px solid rgba(255,255,255,.10);
+}
 
-    box-shadow:
-        0 25px 60px rgba(0,0,0,0.35),
-        inset 0 1px 0 rgba(255,255,255,0.15);
+.hero:after {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    right: -180px;
+    top: -290px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.10);
 }
 
 .hero-title {
-    font-size: 42px;
+    font-size: 36px;
     font-weight: 800;
-    color: white;
-    margin-bottom: 7px;
+    letter-spacing: -1px;
+    position: relative;
+    z-index: 2;
 }
 
 .hero-title span {
-    color: #fed7aa;
+    color: #ffd22e;
 }
 
 .hero-subtitle {
-    font-size: 17px;
-    color: white;
-}
-
-.hero-description {
-    font-size: 13px;
-    color: rgba(255,255,255,0.78);
-    margin-top: 12px;
-}
-
-/* GLASS CARD */
-
-.glass-card {
-    background:
-        linear-gradient(
-            145deg,
-            rgba(17,27,48,0.92),
-            rgba(10,18,34,0.88)
-        );
-
-    border: 1px solid rgba(148,163,184,0.12);
-    border-radius: 18px;
-
-    padding: 20px;
-
-    box-shadow:
-        0 12px 35px rgba(0,0,0,0.20),
-        inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-/* PROFILE */
-
-.profile-title {
-    font-size: 20px;
-    font-weight: 750;
-    color: white;
-}
-
-.profile-subtitle {
-    color: #67c8f5;
-    font-size: 12px;
+    font-size: 15px;
+    color: rgba(255,255,255,.90);
     margin-top: 5px;
+    position: relative;
+    z-index: 2;
 }
 
-/* METRICS */
+.hero-small {
+    font-size: 13px;
+    color: rgba(255,255,255,.72);
+    margin-top: 13px;
+    position: relative;
+    z-index: 2;
+}
 
-.metric-box {
-    background:
-        linear-gradient(
-            145deg,
-            rgba(18,29,51,0.96),
-            rgba(11,19,35,0.94)
-        );
+.section-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 20px 0 6px 0;
+    color: #f2f7ff;
+}
 
-    border: 1px solid rgba(148,163,184,0.10);
+.section-caption {
+    color: #7fa5d1;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
 
-    border-radius: 15px;
-
-    padding: 16px 18px;
-
-    min-height: 105px;
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.18);
+.metric-card {
+    background: linear-gradient(145deg, rgba(16,29,52,.95), rgba(8,18,34,.96));
+    border: 1px solid rgba(116, 143, 183, .14);
+    border-radius: 16px;
+    padding: 17px 18px;
+    min-height: 100px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.18);
 }
 
 .metric-icon {
-    font-size: 20px;
+    font-size: 22px;
 }
 
 .metric-value {
-    font-size: 27px;
+    font-size: 26px;
     font-weight: 800;
-    color: white;
+    color: #f5f8ff;
     margin-top: 3px;
 }
 
 .metric-label {
-    color: #94a3b8;
-    font-size: 10px;
+    font-size: 11px;
+    color: #86a8cf;
+    margin-top: 2px;
 }
 
-/* SECTION */
-
-.section-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: white;
-    margin-top: 25px;
+.glass {
+    background: linear-gradient(145deg, rgba(14,27,49,.94), rgba(7,16,30,.95));
+    border: 1px solid rgba(115, 145, 188, .14);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 12px 35px rgba(0,0,0,.16);
 }
 
-.section-title span {
-    color: #67c8f5;
+.rec-card {
+    border-radius: 16px;
+    padding: 17px 20px;
+    margin: 9px 0;
+    background: linear-gradient(105deg, rgba(30,18,43,.96), rgba(28,19,30,.92));
+    border: 1px solid rgba(255, 84, 78, .55);
+    box-shadow: 0 8px 22px rgba(0,0,0,.16);
 }
 
-.section-caption {
-    color: #64748b;
-    font-size: 12px;
-    margin-bottom: 15px;
+.rec-card:nth-child(3n) {
+    border-color: rgba(255, 176, 33, .65);
+    background: linear-gradient(105deg, rgba(38,29,20,.96), rgba(27,25,17,.94));
 }
 
-/* COURSE CARDS */
-
-.course-card {
-    background:
-        linear-gradient(
-            100deg,
-            rgba(55,16,32,0.94),
-            rgba(22,19,34,0.94)
-        );
-
-    border: 1px solid rgba(244,63,94,0.40);
-
-    border-radius: 15px;
-
-    padding: 15px 18px;
-
-    margin-bottom: 10px;
-
-    box-shadow:
-        0 8px 25px rgba(0,0,0,0.18);
+.rec-card:nth-child(4n) {
+    border-color: rgba(255, 104, 45, .62);
 }
 
-.course-card.orange {
-    background:
-        linear-gradient(
-            100deg,
-            rgba(67,30,13,0.94),
-            rgba(23,20,30,0.94)
-        );
-
-    border-color: rgba(249,115,22,0.40);
-}
-
-.course-card.purple {
-    background:
-        linear-gradient(
-            100deg,
-            rgba(47,22,70,0.94),
-            rgba(18,20,34,0.94)
-        );
-
-    border-color: rgba(168,85,247,0.40);
-}
-
-.course-name {
-    font-size: 15px;
-    font-weight: 750;
-    color: white;
-}
-
-.course-meta {
-    color: #7dd3fc;
-    font-size: 10px;
-    margin-top: 5px;
+.rec-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .course-icon {
-    font-size: 26px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #263b5c, #12243d);
+    font-size: 24px;
+    flex-shrink: 0;
 }
 
-/* BADGE */
+.course-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f2f7ff;
+}
+
+.course-meta {
+    font-size: 11px;
+    color: #8eb0d6;
+    margin-top: 4px;
+}
 
 .badge {
     display: inline-block;
-
-    background:
-        linear-gradient(
-            90deg,
-            #dc2626,
-            #f97316
-        );
-
+    padding: 5px 9px;
+    border-radius: 9px;
+    background: linear-gradient(90deg, #ed173f, #ff7040);
     color: white;
+    font-size: 10px;
+    font-weight: 800;
+    margin-right: 7px;
+}
 
-    border-radius: 20px;
+.score {
+    margin-left: auto;
+    text-align: right;
+}
 
-    padding: 4px 9px;
+.score-number {
+    font-size: 19px;
+    font-weight: 800;
+    color: #fff;
+}
 
+.score-label {
+    color: #8b8fa2;
     font-size: 9px;
-    font-weight: 800;
-
-    margin-bottom: 5px;
 }
 
-.score-badge {
-    background: rgba(255,255,255,0.09);
-
-    border: 1px solid rgba(255,255,255,0.08);
-
+.progress-shell {
+    height: 7px;
+    width: 100%;
+    background: rgba(255,255,255,.08);
     border-radius: 20px;
+    overflow: hidden;
+    margin-top: 9px;
+}
 
-    padding: 7px 12px;
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff3d58, #ff9b29);
+    border-radius: 20px;
+}
 
-    color: white;
+.ai-box {
+    background:
+        radial-gradient(circle at 100% 0%, rgba(120, 78, 255, .20), transparent 35%),
+        linear-gradient(145deg, rgba(23,20,49,.96), rgba(9,16,31,.97));
+    border: 1px solid rgba(134, 103, 255, .34);
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 14px 38px rgba(51, 30, 128, .12);
+}
 
-    font-size: 13px;
+.ai-title {
+    font-size: 18px;
     font-weight: 800;
+    color: #f2edff;
 }
 
-/* DOWNLOAD */
-
-.stDownloadButton button {
-    width: 320px !important;
-
-    height: 52px !important;
-
-    background: white !important;
-
-    color: #172033 !important;
-
-    border: none !important;
-
-    border-radius: 12px !important;
-
-    font-weight: 700 !important;
-
-    box-shadow:
-        0 10px 25px rgba(0,0,0,0.25) !important;
+.ai-caption {
+    font-size: 12px;
+    color: #a6a3cf;
 }
 
-.stDownloadButton button:hover {
-    background: #fff7ed !important;
-    color: #ea580c !important;
+.pill {
+    display: inline-block;
+    border: 1px solid rgba(120, 161, 211, .22);
+    color: #9bc4ef;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 10px;
+    margin: 3px;
+    background: rgba(22, 42, 70, .55);
 }
 
-/* NORMAL BUTTON */
-
-.stButton button {
-    border: none !important;
-
-    border-radius: 11px !important;
-
-    background:
-        linear-gradient(
-            90deg,
-            #dc2626,
-            #f97316
-        ) !important;
-
-    color: white !important;
-
-    font-weight: 700 !important;
+div[data-testid="stButton"] > button {
+    border-radius: 11px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: linear-gradient(90deg, #ef2946, #ff772c);
+    color: white;
+    font-weight: 700;
+    min-height: 42px;
 }
 
-.stButton button:hover {
-    background:
-        linear-gradient(
-            90deg,
-            #ef4444,
-            #fb923c
-        ) !important;
+div[data-testid="stButton"] > button:hover {
+    border-color: rgba(255,255,255,.35);
+    box-shadow: 0 8px 22px rgba(255,80,50,.20);
 }
 
-/* TABS */
+div[data-testid="stDownloadButton"] > button {
+    border-radius: 11px;
+    font-weight: 700;
+}
+
+[data-testid="stDataFrame"] {
+    border-radius: 14px;
+    overflow: hidden;
+}
 
 .stTabs [data-baseweb="tab-list"] {
-    gap: 5px;
-
-    background: rgba(15,23,42,0.75);
-
+    gap: 6px;
+    background: rgba(15,27,47,.78);
+    border-radius: 12px;
     padding: 5px;
-
-    border-radius: 13px;
 }
 
 .stTabs [data-baseweb="tab"] {
     border-radius: 9px;
-
-    color: #94a3b8;
-
-    padding: 10px 18px;
+    color: #91a9c8;
 }
 
 .stTabs [aria-selected="true"] {
-    background:
-        linear-gradient(
-            90deg,
-            rgba(220,38,38,0.28),
-            rgba(249,115,22,0.20)
-        ) !important;
-
-    color: #fed7aa !important;
+    background: linear-gradient(90deg, rgba(255,77,70,.30), rgba(255,135,43,.18));
+    color: #fff !important;
 }
 
-/* SELECTBOX */
-
-div[data-baseweb="select"] > div {
-    background: #10192b !important;
-
-    border-color: rgba(148,163,184,0.15) !important;
-
-    color: white !important;
+div[data-testid="stMetric"] {
+    background: rgba(12,23,41,.82);
+    border: 1px solid rgba(125,151,190,.12);
+    border-radius: 14px;
+    padding: 12px;
 }
 
-/* DATAFRAME */
-
-[data-testid="stDataFrame"] {
-    border-radius: 12px;
-    overflow: hidden;
+hr {
+    border-color: rgba(118, 143, 180, .12);
 }
-
-/* FOOTER */
-
-.footer {
-    text-align: center;
-
-    color: #475569;
-
-    font-size: 11px;
-
-    padding: 35px 0 10px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
 
-# =========================================================
+# ============================================================
 # DATA
-# =========================================================
+# ============================================================
+COURSES = pd.DataFrame([
+    ["Python Fundamentals", "Python", "Beginner", 4, "🐍"],
+    ["Advanced Python", "Python", "Intermediate", 6, "🐍"],
+    ["SQL Foundations", "Database", "Beginner", 4, "🗄️"],
+    ["Advanced SQL", "Database", "Advanced", 6, "🗄️"],
+    ["Machine Learning Basics", "Machine Learning", "Intermediate", 6, "🧠"],
+    ["Applied Machine Learning", "Machine Learning", "Advanced", 8, "🤖"],
+    ["Data Structures & Algorithms", "Computer Science", "Intermediate", 6, "🌳"],
+    ["Git & GitHub", "Developer Tools", "Beginner", 3, "🔗"],
+    ["REST API Development", "Backend", "Intermediate", 5, "⚡"],
+    ["Streamlit App Development", "AI Apps", "Intermediate", 4, "🚀"],
+    ["Prompt Engineering", "Generative AI", "Intermediate", 3, "✨"],
+    ["LLM Application Development", "Generative AI", "Advanced", 7, "🧩"],
+    ["Computer Vision", "AI", "Advanced", 7, "👁️"],
+    ["Cloud Fundamentals", "Cloud", "Beginner", 4, "☁️"],
+    ["AWS for Developers", "Cloud", "Intermediate", 6, "☁️"],
+    ["Data Visualization", "Data Science", "Intermediate", 4, "📊"],
+    ["Statistics for ML", "Data Science", "Intermediate", 5, "📐"],
+    ["Deep Learning", "AI", "Advanced", 8, "🔥"],
+    ["NLP Fundamentals", "AI", "Intermediate", 6, "💬"],
+    ["MLOps Foundations", "MLOps", "Advanced", 7, "⚙️"],
+], columns=["course", "category", "level", "weeks", "icon"])
 
-@st.cache_data
-def create_data():
 
-    random.seed(42)
-    np.random.seed(42)
-
-    interns = [
-        "Ali",
-        "Ahmed",
-        "Sara",
-        "Hamza",
-        "Ayesha",
-        "Usman",
-        "Fatima",
-        "Bilal",
-        "Hassan",
-        "Zainab",
-        "Daniyal",
-        "Maham"
-    ]
-
-    courses = [
-        ("Python Fundamentals", "Python", "Beginner", 4),
-        ("Advanced Python", "Python", "Intermediate", 6),
-        ("Machine Learning Basics", "Machine Learning", "Intermediate", 6),
-        ("Deep Learning", "AI", "Advanced", 8),
-        ("Data Analysis with Pandas", "Data Science", "Intermediate", 5),
-        ("SQL Fundamentals", "Database", "Beginner", 4),
-        ("Advanced SQL", "Database", "Advanced", 6),
-        ("Git & GitHub", "Development", "Beginner", 3),
-        ("REST API Development", "Backend", "Intermediate", 5),
-        ("FastAPI Development", "Backend", "Advanced", 6),
-        ("Streamlit Development", "Web Development", "Intermediate", 4),
-        ("Cloud Fundamentals", "Cloud", "Beginner", 4),
-        ("AWS Essentials", "Cloud", "Intermediate", 6),
-        ("Computer Vision", "AI", "Advanced", 7),
-        ("Natural Language Processing", "AI", "Advanced", 7),
-        ("Data Structures & Algorithms", "Programming", "Intermediate", 7),
-        ("Object Oriented Programming", "Programming", "Intermediate", 5),
-        ("Software Engineering Basics", "Software Engineering", "Beginner", 4),
-        ("Agile & Scrum", "Software Engineering", "Beginner", 3),
-        ("Cybersecurity Fundamentals", "Security", "Beginner", 5)
-    ]
-
-    course_df = pd.DataFrame(
-        courses,
-        columns=[
-            "Course",
-            "Category",
-            "Level",
-            "Duration"
-        ]
-    )
-
+def demo_interactions():
+    """Synthetic demo data so the app works immediately on Streamlit Cloud."""
+    rng = np.random.default_rng(42)
+    interns = [f"Intern {i:02d}" for i in range(1, 13)]
     rows = []
 
+    # Each intern has a slightly different learning profile.
+    preferences = {
+        "Intern 01": ["Python", "AI", "Generative AI"],
+        "Intern 02": ["Database", "Backend", "Cloud"],
+        "Intern 03": ["Machine Learning", "Data Science", "Python"],
+        "Intern 04": ["Developer Tools", "Backend", "AI Apps"],
+        "Intern 05": ["AI", "Machine Learning", "Data Science"],
+        "Intern 06": ["Cloud", "Backend", "Database"],
+        "Intern 07": ["Python", "Generative AI", "AI"],
+        "Intern 08": ["Computer Science", "Python", "Backend"],
+        "Intern 09": ["Data Science", "Machine Learning", "AI"],
+        "Intern 10": ["Cloud", "Developer Tools", "MLOps"],
+        "Intern 11": ["Generative AI", "AI Apps", "Python"],
+        "Intern 12": ["Database", "Data Science", "Computer Science"],
+    }
+
     for intern in interns:
+        liked = preferences[intern]
+        for _, c in COURSES.iterrows():
+            base = 1.7
+            if c["category"] in liked:
+                base += 1.6
+            if c["level"] == "Intermediate":
+                base += 0.25
+            rating = np.clip(base + rng.normal(0, 0.75), 1, 5)
+            completed = int(rng.random() > 0.34)
+            engagement = np.clip(rating + rng.normal(0, .45), 1, 5)
+            rows.append([
+                intern, c["course"], round(float(rating), 2),
+                round(float(engagement), 2), completed
+            ])
 
-        preferred = random.sample(
-            list(course_df["Category"].unique()),
-            4
-        )
-
-        for _, course in course_df.iterrows():
-
-            probability = (
-                0.75
-                if course["Category"] in preferred
-                else 0.28
-            )
-
-            if random.random() < probability:
-
-                rows.append({
-                    "Intern": intern,
-                    "Course": course["Course"],
-                    "Rating": random.choice(
-                        [1, 2, 3, 4, 5]
-                    )
-                })
-
-    return (
-        interns,
-        course_df,
-        pd.DataFrame(rows)
+    return pd.DataFrame(
+        rows,
+        columns=["intern", "course", "rating", "engagement", "completed"]
     )
 
 
-interns, course_df, interactions = create_data()
+def make_interaction_matrix(df):
+    matrix = df.pivot_table(
+        index="intern",
+        columns="course",
+        values="rating",
+        aggfunc="mean"
+    ).fillna(0)
+    return matrix
 
 
-# =========================================================
+# ============================================================
 # MATRIX FACTORIZATION
-# =========================================================
+# ============================================================
+def matrix_factorization(R, factors=4, steps=650, lr=0.008, reg=0.025):
+    """
+    Lightweight SGD matrix factorization.
+    This avoids extra recommender-system packages and works well on Streamlit Cloud.
+    """
+    R = np.asarray(R, dtype=float)
+    mask = R > 0
 
-@st.cache_resource
-def train_model(data):
+    rng = np.random.default_rng(7)
+    P = rng.normal(0, 0.12, (R.shape[0], factors))
+    Q = rng.normal(0, 0.12, (R.shape[1], factors))
 
-    matrix = data.pivot_table(
-        index="Intern",
-        columns="Course",
-        values="Rating",
-        fill_value=0
-    )
+    rows, cols = np.where(mask)
 
-    n_components = max(
-        1,
-        min(8, min(matrix.shape) - 1)
-    )
+    for _ in range(steps):
+        order = rng.permutation(len(rows))
+        for idx in order:
+            i, j = rows[idx], cols[idx]
+            prediction = float(np.dot(P[i], Q[j]))
+            error = R[i, j] - prediction
 
-    model = TruncatedSVD(
-        n_components=n_components,
-        random_state=42
-    )
+            P[i] += lr * (error * Q[j] - reg * P[i])
+            Q[j] += lr * (error * P[i] - reg * Q[j])
 
-    latent = model.fit_transform(matrix)
-
-    reconstructed = np.dot(
-        latent,
-        model.components_
-    )
-
-    predictions = pd.DataFrame(
-        reconstructed,
-        index=matrix.index,
-        columns=matrix.columns
-    )
-
-    return matrix, predictions
+    predicted = np.dot(P, Q.T)
+    return predicted
 
 
-interaction_matrix, prediction_matrix = train_model(
-    interactions
-)
+def recommend_for_intern(interactions, courses, intern, top_n=5):
+    matrix = make_interaction_matrix(interactions)
+    predicted = matrix_factorization(matrix.values)
+
+    if intern not in matrix.index:
+        return pd.DataFrame()
+
+    i = list(matrix.index).index(intern)
+    scores = predicted[i]
+
+    # Prefer modules the intern has not completed.
+    history = interactions[interactions["intern"] == intern]
+    completed = set(history.loc[history["completed"] == 1, "course"].tolist())
+
+    recs = pd.DataFrame({
+        "course": matrix.columns,
+        "score": scores
+    })
+
+    recs = recs[~recs["course"].isin(completed)].copy()
+
+    if recs.empty:
+        recs = pd.DataFrame({"course": matrix.columns, "score": scores})
+
+    # Convert raw MF scores into an attractive 70-98 recommendation percentage.
+    scaler = MinMaxScaler(feature_range=(72, 98))
+    recs["recommendation"] = scaler.fit_transform(
+        recs[["score"]]
+    ).ravel()
+
+    recs = recs.merge(courses, on="course", how="left")
+    recs = recs.sort_values("recommendation", ascending=False).head(top_n)
+    recs["recommendation"] = recs["recommendation"].round(0).astype(int)
+
+    return recs
 
 
-# =========================================================
-# RECOMMENDATIONS
-# =========================================================
-
-def get_recommendations(
-    intern,
-    count=6
-):
-
-    scores = prediction_matrix.loc[intern].copy()
-
-    completed = interaction_matrix.loc[intern]
-
-    scores[completed > 0] = -999
-
-    top = scores.sort_values(
-        ascending=False
-    ).head(count)
-
-    results = []
-
-    for course_name, score in top.items():
-
-        info = course_df[
-            course_df["Course"] == course_name
-        ].iloc[0]
-
-        percentage = int(
-            np.clip(
-                70 + float(score) * 8,
-                72,
-                98
-            )
-        )
-
-        results.append({
-            "Course": course_name,
-            "Category": info["Category"],
-            "Level": info["Level"],
-            "Duration": info["Duration"],
-            "Score": percentage
-        })
-
-    return pd.DataFrame(results)
-
-
-# =========================================================
+# ============================================================
 # GROQ
-# =========================================================
+# ============================================================
+def get_groq_client(api_key=None):
+    if not GROQ_AVAILABLE:
+        return None
 
-def generate_ai_plan(
-    intern,
-    recommendations
-):
+    key = api_key or os.getenv("GROQ_API_KEY")
+    if not key:
+        try:
+            key = st.secrets.get("GROQ_API_KEY", "")
+        except Exception:
+            key = ""
+
+    if not key:
+        return None
+
+    return Groq(api_key=key)
+
+
+def ask_groq(prompt, api_key=None):
+    client = get_groq_client(api_key)
+    if client is None:
+        return (
+            "Groq is not connected yet. Add your GROQ_API_KEY in Streamlit "
+            "Secrets or the environment, then try again."
+        )
 
     try:
-
-        from groq import Groq
-
-        api_key = None
-
-        try:
-            api_key = st.secrets["GROQ_API_KEY"]
-        except Exception:
-            api_key = os.getenv("GROQ_API_KEY")
-
-        if not api_key:
-
-            return (
-                "Add your GROQ_API_KEY to Streamlit Secrets "
-                "to activate the AI Learning Advisor."
-            )
-
-        client = Groq(
-            api_key=api_key
-        )
-
-        courses_text = "\n".join(
-            [
-                f"- {row['Course']} "
-                f"({row['Category']}, {row['Level']})"
-                for _, row in recommendations.iterrows()
-            ]
-        )
-
-        prompt = f"""
-You are an AI learning advisor.
-
-Intern: {intern}
-
-Personalized recommendations:
-
-{courses_text}
-
-Create a practical personalized learning plan.
-
-Include:
-- Recommended starting point
-- Learning sequence
-- Skills to develop
-- One practical project
-- Expected outcome
-
-Keep it concise and professional.
-"""
-
         response = client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are a professional "
-                        "learning-path advisor."
-                    )
+                        "You are LearnPath AI, an expert learning advisor for interns. "
+                        "Give concise, practical, personalized learning guidance. "
+                        "Use the provided recommendation data; do not invent learner "
+                        "history. Format answers with short headings and bullets when useful."
+                    ),
                 },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "user", "content": prompt},
             ],
-            temperature=0.5,
-            max_completion_tokens=700,
-            include_reasoning=False
+            temperature=0.45,
+            max_tokens=900,
         )
-
         return response.choices[0].message.content
-
     except Exception as e:
-
         return (
-            "The AI Advisor could not connect right now.\n\n"
-            f"Error: `{type(e).__name__}`"
+            f"AI request could not be completed: {type(e).__name__}. "
+            "Check that GROQ_API_KEY is valid and that the Groq model is available "
+            "for your account."
         )
 
 
-# =========================================================
+# ============================================================
+# SESSION STATE
+# ============================================================
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
+
+if "interactions" not in st.session_state:
+    st.session_state.interactions = demo_interactions()
+
+if "selected_intern" not in st.session_state:
+    st.session_state.selected_intern = "Intern 01"
+
+if "uploaded_name" not in st.session_state:
+    st.session_state.uploaded_name = "Demo learning history"
+
+
+# ============================================================
 # SIDEBAR
-# =========================================================
-
+# ============================================================
 with st.sidebar:
-
-    st.markdown(
-        "<h1 style='text-align:center;'>🎓</h1>",
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        """
-        <h2 style="
-            text-align:center;
-            color:white;
-            margin-top:-10px;
-        ">
-        LearnPath <span style="color:#f97316;">AI</span>
-        </h2>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.caption(
-        "Personalized Learning Paths"
-    )
-
-    st.divider()
-
-    st.markdown("### 🧭 Navigation")
-
-    st.markdown(
-        "🏠 **Home**"
-    )
-
-    st.markdown(
-        "👤 **Intern Profile**"
-    )
-
-    st.markdown(
-        "📊 **Learning Analytics**"
-    )
-
-    st.markdown(
-        "🧠 **AI Advisor**"
-    )
-
-    st.divider()
-
-    st.markdown("### ⚙️ Personalization")
-
-    selected_intern = st.selectbox(
-        "Select Intern",
-        interns
-    )
-
-    recommendation_count = st.slider(
-        "Number of Recommendations",
-        3,
-        10,
-        6
-    )
-
-    st.divider()
-
-    st.markdown("### 🔬 AI Pipeline")
-
-    st.caption(
-        "1️⃣ Learning history"
-    )
-
-    st.caption(
-        "2️⃣ Interaction matrix"
-    )
-
-    st.caption(
-        "3️⃣ Matrix Factorization"
-    )
-
-    st.caption(
-        "4️⃣ Course prediction"
-    )
-
-    st.caption(
-        "5️⃣ Personalized path"
-    )
-
-    st.caption(
-        "6️⃣ Groq AI Advisor"
-    )
-
-
-# =========================================================
-# HERO
-# =========================================================
-
-st.markdown(
-    """
-    <div class="hero-box">
-
-        <div class="hero-title">
-            🎓 LearnPath <span>AI</span>
+    st.markdown("""
+    <div style="padding:10px 5px 18px 5px;">
+        <div style="font-size:28px;font-weight:800;">
+            🎓 <span style="color:#f6f8ff;">LearnPath</span>
+            <span style="color:#ff8b2b;">AI</span>
         </div>
-
-        <div class="hero-subtitle">
-            Personalized learning paths powered by
-            Matrix Factorization + Generative AI
+        <div style="font-size:11px;color:#78a1ce;margin-left:38px;">
+            Personalized Learning Paths
         </div>
-
-        <div class="hero-description">
-            Turn previous intern learning behavior into
-            a customized training journey.
-        </div>
-
     </div>
-    """,
-    unsafe_allow_html=True
-)
+    """, unsafe_allow_html=True)
+
+    pages = {
+        "🏠  Home": "Home",
+        "👤  Intern Profile": "Intern Profile",
+        "📊  Learning Analytics": "Learning Analytics",
+        "🧠  AI Advisor": "AI Advisor",
+        "": "",
+        "🔗  AI Pipeline": "AI Pipeline",
+        "①  Learning history": "Learning history",
+        "②  Interaction matrix": "Interaction matrix",
+        "③  Matrix Factorization": "Matrix Factorization",
+        "④  Course prediction": "Course prediction",
+        "⑤  Personalized path": "Personalized path",
+        "⑥  Groq AI explanation": "Groq AI explanation",
+    }
+
+    for label, value in pages.items():
+        if not value:
+            st.markdown("<hr>", unsafe_allow_html=True)
+            continue
+        if st.button(label, use_container_width=True, key=f"nav_{value}"):
+            st.session_state.page = value
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown(
+        "<div style='font-size:10px;color:#6487ae;'>MODEL</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<div class='pill'>Matrix Factorization</div>"
+        "<div class='pill'>Collaborative Filtering</div>"
+        "<div class='pill'>Groq AI</div>",
+        unsafe_allow_html=True,
+    )
 
 
-# =========================================================
-# PROFILE
-# =========================================================
+# ============================================================
+# HEADER
+# ============================================================
+st.markdown("""
+<div class="hero">
+    <div class="hero-title">🎓 LearnPath <span>AI</span></div>
+    <div class="hero-subtitle">
+        Personalized learning paths powered by <b>Matrix Factorization + Generative AI</b>
+    </div>
+    <div class="hero-small">
+        Turn previous intern learning behavior into a customized training journey.
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-history = interactions[
-    interactions["Intern"] == selected_intern
+st.write("")
+
+
+# ============================================================
+# SELECTOR
+# ============================================================
+left, right = st.columns([2.5, 1])
+with left:
+    interns = sorted(st.session_state.interactions["intern"].unique().tolist())
+    selected = st.selectbox(
+        "Active intern profile",
+        interns,
+        index=interns.index(st.session_state.selected_intern)
+        if st.session_state.selected_intern in interns else 0,
+    )
+    st.session_state.selected_intern = selected
+
+with right:
+    uploaded = st.file_uploader(
+        "Optional learning-history CSV",
+        type=["csv"],
+        help=(
+            "Columns supported: intern, course, rating, engagement, completed. "
+            "Extra columns are ignored."
+        ),
+    )
+
+if uploaded is not None:
+    try:
+        new_df = pd.read_csv(uploaded)
+        required = {"intern", "course", "rating", "engagement", "completed"}
+        if required.issubset(new_df.columns):
+            st.session_state.interactions = new_df.copy()
+            st.session_state.uploaded_name = uploaded.name
+            st.success(f"Loaded {uploaded.name}")
+        else:
+            st.error(
+                "CSV needs these columns: intern, course, rating, engagement, completed"
+            )
+    except Exception as e:
+        st.error(f"Could not read CSV: {e}")
+
+
+interactions = st.session_state.interactions
+active = st.session_state.selected_intern
+history = interactions[interactions["intern"] == active].copy()
+recommendations = recommend_for_intern(interactions, COURSES, active, top_n=6)
+
+
+# ============================================================
+# METRICS
+# ============================================================
+avg_engagement = history["engagement"].mean() if not history.empty else 0
+completed_count = int(history["completed"].sum()) if not history.empty else 0
+categories = int(
+    history.merge(COURSES[["course", "category"]], on="course", how="left")["category"]
+    .nunique()
+) if not history.empty else 0
+
+metric_cols = st.columns(4)
+
+metrics = [
+    ("📚", len(history), "Learning Interactions"),
+    ("⭐", f"{avg_engagement:.1f}/5", "Average Engagement"),
+    ("🧩", categories, "Skill Categories"),
+    ("🗄️", len(COURSES), "Available Modules"),
 ]
 
-average_rating = round(
-    history["Rating"].mean(),
-    1
-)
-
-interaction_count = len(history)
-
-category_count = history["Course"].map(
-    course_df.set_index("Course")["Category"]
-).nunique()
-
-recommendations = get_recommendations(
-    selected_intern,
-    recommendation_count
-)
+for col, (icon, value, label) in zip(metric_cols, metrics):
+    with col:
+        st.markdown(
+            f"""
+            <div class="metric-card">
+                <div class="metric-icon">{icon}</div>
+                <div class="metric-value">{value}</div>
+                <div class="metric-label">{label}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
-st.markdown(
-    """
-    <div class="glass-card">
-
-        <div class="profile-title">
-            👤 Intern Learning Profile
-        </div>
-
-        <div class="profile-subtitle">
-            Insights based on previous learning behavior
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-st.write("")
-
-
-# =========================================================
-# METRICS
-# =========================================================
-
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-
+# ============================================================
+# HOME
+# ============================================================
+if st.session_state.page == "Home":
     st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-icon">📚</div>
-            <div class="metric-value">
-                {interaction_count}
-            </div>
-            <div class="metric-label">
-                Learning Interactions
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
+        '<div class="section-title">✨ Your Personalized Learning Path</div>'
+        '<div class="section-caption">'
+        'Recommendations are generated from historical learning behavior using Matrix Factorization.'
+        '</div>',
+        unsafe_allow_html=True,
     )
 
-with c2:
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-icon">⭐</div>
-            <div class="metric-value">
-                {average_rating}/5
-            </div>
-            <div class="metric-label">
-                Average Engagement
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c3:
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-icon">🧩</div>
-            <div class="metric-value">
-                {category_count}
-            </div>
-            <div class="metric-label">
-                Skill Categories
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c4:
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-icon">🎯</div>
-            <div class="metric-value">
-                {len(course_df)}
-            </div>
-            <div class="metric-label">
-                Available Modules
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-# =========================================================
-# TABS
-# =========================================================
-
-st.write("")
-
-tab1, tab2, tab3 = st.tabs(
-    [
+    tab1, tab2, tab3 = st.tabs([
         "✨ Recommended Path",
         "📊 Learning Analytics",
-        "🧠 AI Advisor"
-    ]
-)
+        "🤖 AI Learning Advisor",
+    ])
+
+    with tab1:
+        if recommendations.empty:
+            st.warning("Not enough data to generate recommendations.")
+        else:
+            for rank, (_, row) in enumerate(recommendations.iterrows(), start=1):
+                score = int(row["recommendation"])
+                st.markdown(
+                    f"""
+                    <div class="rec-card">
+                        <div class="rec-row">
+                            <div class="course-icon">{row['icon']}</div>
+                            <div>
+                                <span class="badge">#{rank} RECOMMENDED</span>
+                                <div class="course-name">{row['course']}</div>
+                                <div class="course-meta">
+                                    {row['category']} &nbsp;|&nbsp;
+                                    {row['level']} &nbsp;|&nbsp;
+                                    {row['weeks']} weeks
+                                </div>
+                            </div>
+                            <div class="score">
+                                <div class="score-number">{score}%</div>
+                                <div class="score-label">Recommendation<br>Score</div>
+                            </div>
+                        </div>
+                        <div class="progress-shell">
+                            <div class="progress-fill" style="width:{score}%"></div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            st.download_button(
+                "⬇️ Download Learning Path",
+                data=recommendations[
+                    ["course", "category", "level", "weeks", "recommendation"]
+                ].to_csv(index=False),
+                file_name=f"{active.lower().replace(' ', '_')}_learning_path.csv",
+                mime="text/csv",
+                use_container_width=False,
+            )
+
+    with tab2:
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown(
+                '<div class="glass"><b>📈 Engagement by Course</b></div>',
+                unsafe_allow_html=True,
+            )
+            chart_df = history[["course", "engagement"]].sort_values(
+                "engagement", ascending=True
+            )
+            st.bar_chart(chart_df.set_index("course"), height=330)
+
+        with c2:
+            st.markdown(
+                '<div class="glass"><b>🏷️ Category Activity</b></div>',
+                unsafe_allow_html=True,
+            )
+            category_df = (
+                history.merge(
+                    COURSES[["course", "category"]],
+                    on="course",
+                    how="left"
+                )
+                .groupby("category")["engagement"]
+                .mean()
+                .sort_values(ascending=True)
+            )
+            st.bar_chart(category_df, height=330)
+
+    with tab3:
+        st.markdown(
+            """
+            <div class="ai-box">
+                <div class="ai-title">🧠 AI Learning Advisor</div>
+                <div class="ai-caption">
+                    Ask Groq to explain why these modules fit the intern's learning behavior.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        question = st.text_input(
+            "Ask a learning question",
+            placeholder="Why are these courses recommended for me?",
+            key="home_ai_question",
+        )
+        if st.button("✨ Ask Groq AI", key="home_ask"):
+            if question.strip():
+                rec_text = recommendations[
+                    ["course", "category", "level", "weeks", "recommendation"]
+                ].to_string(index=False)
+                prompt = f"""
+Intern: {active}
+Average engagement: {avg_engagement:.2f}/5
+Completed modules: {completed_count}
+Recommended modules:
+{rec_text}
+
+User question:
+{question}
+
+Explain the recommendation using the supplied data and give a practical next step.
+"""
+                with st.spinner("Groq is analyzing the learning path..."):
+                    st.markdown(
+                        f"<div class='ai-box'>{ask_groq(prompt)}</div>",
+                        unsafe_allow_html=True,
+                    )
 
 
-# =========================================================
-# RECOMMENDED PATH
-# =========================================================
+# ============================================================
+# INTERN PROFILE
+# ============================================================
+elif st.session_state.page == "Intern Profile":
+    st.markdown('<div class="section-title">👤 Intern Learning Profile</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-caption">Insights based on historical learning behavior.</div>',
+        unsafe_allow_html=True,
+    )
 
-with tab1:
+    p1, p2, p3 = st.columns(3)
+    with p1:
+        st.metric("Intern", active)
+    with p2:
+        st.metric("Completed", completed_count)
+    with p3:
+        st.metric("Avg. Engagement", f"{avg_engagement:.2f}/5")
+
+    st.markdown("### 🧬 Learning fingerprint")
+
+    category_profile = (
+        history.merge(COURSES[["course", "category"]], on="course", how="left")
+        .groupby("category")
+        .agg(
+            engagement=("engagement", "mean"),
+            interactions=("course", "count"),
+        )
+        .sort_values("engagement", ascending=False)
+    )
+
+    for category, row in category_profile.iterrows():
+        value = int(np.clip(row["engagement"] / 5 * 100, 0, 100))
+        st.markdown(
+            f"""
+            <div class="glass" style="margin:8px 0;">
+                <b>{category}</b>
+                <span style="float:right;color:#ffad35;">
+                    {row['engagement']:.1f}/5
+                </span>
+                <div class="progress-shell">
+                    <div class="progress-fill" style="width:{value}%"></div>
+                </div>
+                <div style="font-size:10px;color:#7898bd;margin-top:6px;">
+                    {int(row['interactions'])} historical interactions
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+# ============================================================
+# LEARNING ANALYTICS
+# ============================================================
+elif st.session_state.page == "Learning Analytics":
+    st.markdown('<div class="section-title">📊 Learning Analytics</div>', unsafe_allow_html=True)
+
+    a1, a2 = st.columns(2)
+    with a1:
+        st.markdown("### Engagement distribution")
+        st.bar_chart(history["engagement"].round(1).value_counts().sort_index(), height=320)
+    with a2:
+        st.markdown("### Rating distribution")
+        st.bar_chart(history["rating"].round(1).value_counts().sort_index(), height=320)
+
+    st.markdown("### Detailed learning history")
+    display = history.merge(COURSES, on="course", how="left")
+    st.dataframe(
+        display[
+            ["course", "category", "level", "rating", "engagement", "completed"]
+        ].sort_values("engagement", ascending=False),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+# ============================================================
+# AI ADVISOR
+# ============================================================
+elif st.session_state.page == "AI Advisor":
+    st.markdown('<div class="section-title">🧠 Groq AI Learning Advisor</div>', unsafe_allow_html=True)
 
     st.markdown(
         """
-        <div class="section-title">
-            ✨ Your <span>Personalized Learning Path</span>
-        </div>
-
-        <div class="section-caption">
-            Recommendations generated using
-            Collaborative Filtering + Matrix Factorization.
+        <div class="ai-box">
+            <div class="ai-title">Personalized coaching layer</div>
+            <div class="ai-caption">
+                Matrix Factorization finds learning patterns. Groq turns those patterns
+                into an understandable learning strategy.
+            </div>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    icons = [
-        "🐍",
-        "🤖",
-        "🗄️",
-        "☁️",
-        "📊",
-        "💻",
-        "🔐",
-        "⚙️"
+    q = st.text_area(
+        "What would you like the advisor to analyze?",
+        placeholder=(
+            "Example: Build a 6-week plan for this intern and explain which skills "
+            "should be learned first."
+        ),
+        height=130,
+    )
+
+    if st.button("🚀 Generate AI Learning Plan"):
+        if not q.strip():
+            st.warning("Write a question first.")
+        else:
+            rec_text = recommendations[
+                ["course", "category", "level", "weeks", "recommendation"]
+            ].to_string(index=False)
+            prompt = f"""
+Intern: {active}
+Historical average engagement: {avg_engagement:.2f}/5
+Completed modules: {completed_count}
+
+Matrix-factorization recommendations:
+{rec_text}
+
+Advisor request:
+{q}
+
+Create a concise practical plan. Explain the reasoning from the supplied data.
+"""
+            with st.spinner("Building personalized plan..."):
+                answer = ask_groq(prompt)
+            st.markdown(f"<div class='ai-box'>{answer}</div>", unsafe_allow_html=True)
+
+
+# ============================================================
+# AI PIPELINE
+# ============================================================
+elif st.session_state.page == "AI Pipeline":
+    st.markdown('<div class="section-title">🔗 AI Recommendation Pipeline</div>', unsafe_allow_html=True)
+    steps = [
+        ("01", "Learning History", "Collect ratings, engagement and completion behavior."),
+        ("02", "Interaction Matrix", "Convert intern-course activity into a user-item matrix."),
+        ("03", "Matrix Factorization", "Learn hidden skill preferences from the interaction matrix."),
+        ("04", "Course Prediction", "Predict affinity for unseen learning modules."),
+        ("05", "Personalized Path", "Rank modules into an individual learning journey."),
+        ("06", "Groq AI Explanation", "Generate a human-friendly explanation and study plan."),
     ]
 
-    styles = [
-        "",
-        "orange",
-        "purple"
-    ]
-
-    for i, (_, row) in enumerate(
-        recommendations.iterrows()
-    ):
-
-        style = styles[
-            i % len(styles)
-        ]
-
-        left, center, right = st.columns(
-            [0.7, 6, 1]
+    for num, title, desc in steps:
+        st.markdown(
+            f"""
+            <div class="glass" style="margin:10px 0;">
+                <span style="display:inline-flex;width:38px;height:38px;border-radius:50%;
+                    align-items:center;justify-content:center;background:linear-gradient(135deg,#e52242,#ff8c2b);
+                    font-weight:800;">{num}</span>
+                <span style="font-size:16px;font-weight:800;margin-left:10px;">{title}</span>
+                <div style="color:#87a9cf;font-size:12px;margin:8px 0 0 49px;">{desc}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-        with left:
 
-            st.markdown(
-                f"""
-                <div class="course-icon">
-                    {icons[i % len(icons)]}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with center:
-
-            st.markdown(
-                f"""
-                <div class="course-card {style}">
-
-                    <div class="badge">
-                        #{i + 1} RECOMMENDED
-                    </div>
-
-                    <div class="course-name">
-                        {row["Course"]}
-                    </div>
-
-                    <div class="course-meta">
-                        {row["Category"]}
-                        &nbsp; • &nbsp;
-                        {row["Level"]}
-                        &nbsp; • &nbsp;
-                        {row["Duration"]} weeks
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with right:
-
-            st.markdown(
-                f"""
-                <div style="
-                    margin-top:20px;
-                    text-align:center;
-                ">
-                    <span class="score-badge">
-                        {row["Score"]}%
-                    </span>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-    st.write("")
-
-    csv_data = recommendations.to_csv(
-        index=False
-    ).encode("utf-8")
+# ============================================================
+# LEARNING HISTORY
+# ============================================================
+elif st.session_state.page == "Learning history":
+    st.markdown('<div class="section-title">① Learning History</div>', unsafe_allow_html=True)
+    st.dataframe(
+        interactions.sort_values(["intern", "course"]),
+        use_container_width=True,
+        hide_index=True,
+    )
 
     st.download_button(
-        "📥  Download Learning Path",
-        data=csv_data,
-        file_name=(
-            f"{selected_intern}_"
-            "learning_path.csv"
-        ),
-        mime="text/csv"
+        "⬇️ Download Current Learning History",
+        interactions.to_csv(index=False),
+        "learning_history.csv",
+        "text/csv",
     )
 
 
-# =========================================================
-# ANALYTICS
-# =========================================================
+# ============================================================
+# INTERACTION MATRIX
+# ============================================================
+elif st.session_state.page == "Interaction matrix":
+    st.markdown('<div class="section-title">② Interaction Matrix</div>', unsafe_allow_html=True)
+    matrix = make_interaction_matrix(interactions)
+    st.markdown(
+        '<div class="section-caption">'
+        'Rows represent interns and columns represent courses. Values are historical ratings.'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.dataframe(
+        matrix.round(2),
+        use_container_width=True,
+    )
 
-with tab2:
+
+# ============================================================
+# MATRIX FACTORIZATION
+# ============================================================
+elif st.session_state.page == "Matrix Factorization":
+    st.markdown('<div class="section-title">③ Matrix Factorization</div>', unsafe_allow_html=True)
 
     st.markdown(
         """
-        <div class="section-title">
-            📊 Learning <span>Analytics</span>
+        <div class="glass">
+        <b>How the recommender works</b><br><br>
+        Collaborative filtering learns hidden preferences from historical
+        intern-course interactions. The interaction matrix is decomposed into
+        lower-dimensional intern and course representations. Their dot product
+        produces predicted affinity scores for courses the intern has not completed.
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    col1, col2 = st.columns(2)
+    matrix = make_interaction_matrix(interactions)
+    predicted = matrix_factorization(matrix.values)
 
-    with col1:
+    mf1, mf2, mf3 = st.columns(3)
+    mf1.metric("Intern vectors", matrix.shape[0])
+    mf2.metric("Course vectors", matrix.shape[1])
+    mf3.metric("Latent factors", 4)
 
-        st.markdown(
-            "### 📚 Previous Learning Activity"
-        )
+    st.markdown("### Predicted affinity matrix")
+    predicted_df = pd.DataFrame(
+        predicted,
+        index=matrix.index,
+        columns=matrix.columns,
+    )
+    st.dataframe(predicted_df.round(2), use_container_width=True)
 
-        history_table = history.merge(
-            course_df,
-            on="Course"
-        )
 
-        st.dataframe(
-            history_table[
-                [
-                    "Course",
-                    "Category",
-                    "Level",
-                    "Rating"
-                ]
-            ],
-            use_container_width=True,
-            hide_index=True
-        )
+# ============================================================
+# COURSE PREDICTION
+# ============================================================
+elif st.session_state.page == "Course prediction":
+    st.markdown('<div class="section-title">④ Course Prediction</div>', unsafe_allow_html=True)
 
-    with col2:
+    if recommendations.empty:
+        st.warning("Not enough historical data.")
+    else:
+        prediction_df = recommendations[
+            ["course", "category", "level", "weeks", "recommendation"]
+        ].copy()
+        prediction_df.columns = [
+            "Course", "Category", "Level", "Weeks", "Predicted Recommendation %"
+        ]
+        st.dataframe(prediction_df, use_container_width=True, hide_index=True)
 
-        st.markdown(
-            "### 📈 Category Engagement"
-        )
-
-        category_data = history_table.groupby(
-            "Category"
-        )["Rating"].mean()
-
+        st.markdown("### Top predicted modules")
         st.bar_chart(
-            category_data
+            recommendations.set_index("course")["recommendation"],
+            height=350,
         )
 
 
-# =========================================================
-# AI ADVISOR
-# =========================================================
+# ============================================================
+# PERSONALIZED PATH
+# ============================================================
+elif st.session_state.page == "Personalized path":
+    st.markdown('<div class="section-title">⑤ Personalized Learning Path</div>', unsafe_allow_html=True)
 
-with tab3:
+    if recommendations.empty:
+        st.warning("Not enough data to create a learning path.")
+    else:
+        path = recommendations.copy()
+        path["week_start"] = range(1, len(path) + 1)
 
-    st.markdown(
-        """
-        <div class="section-title">
-            🧠 AI <span>Learning Advisor</span>
-        </div>
-
-        <div class="section-caption">
-            Groq analyzes the personalized recommendations
-            and converts them into a practical learning strategy.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        """
-        <div class="glass-card">
-
-            <h3 style="color:white;">
-                🤖 Personalized AI Strategy
-            </h3>
-
-            <p style="color:#94a3b8;">
-                Generate a customized roadmap based on
-                the intern's historical learning behavior.
-            </p>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.write("")
-
-    if st.button(
-        "✨ Generate AI Learning Plan",
-        use_container_width=True
-    ):
-
-        with st.spinner(
-            "Creating personalized learning strategy..."
-        ):
-
-            result = generate_ai_plan(
-                selected_intern,
-                recommendations
+        for _, row in path.iterrows():
+            st.markdown(
+                f"""
+                <div class="glass" style="margin:10px 0;border-left:4px solid #ff5c35;">
+                    <div style="font-size:11px;color:#ff9c39;font-weight:800;">
+                        WEEK {int(row['week_start'])}
+                    </div>
+                    <div style="font-size:18px;font-weight:800;margin-top:4px;">
+                        {row['icon']} {row['course']}
+                    </div>
+                    <div style="font-size:12px;color:#89a9cc;margin-top:5px;">
+                        {row['category']} · {row['level']} · {int(row['weeks'])} weeks
+                    </div>
+                    <div style="font-size:12px;color:#d9e6f8;margin-top:8px;">
+                        Recommendation confidence: <b>{int(row['recommendation'])}%</b>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-        st.markdown(result)
+
+# ============================================================
+# GROQ EXPLANATION
+# ============================================================
+elif st.session_state.page == "Groq AI explanation":
+    st.markdown('<div class="section-title">⑥ Groq AI Explanation</div>', unsafe_allow_html=True)
+
+    if recommendations.empty:
+        st.warning("Generate recommendations first.")
+    else:
+        rec_text = recommendations[
+            ["course", "category", "level", "weeks", "recommendation"]
+        ].to_string(index=False)
+
+        if st.button("✨ Explain My Learning Path"):
+            prompt = f"""
+Intern: {active}
+Historical interactions: {len(history)}
+Average engagement: {avg_engagement:.2f}/5
+Completed modules: {completed_count}
+
+Recommended path:
+{rec_text}
+
+Explain:
+1. Why these modules are relevant.
+2. Which module should be started first and why.
+3. What skills the intern is likely to build.
+4. A practical weekly study routine.
+
+Keep the answer concise and grounded only in the supplied data.
+"""
+            with st.spinner("Groq is explaining the recommendation..."):
+                answer = ask_groq(prompt)
+            st.markdown(f"<div class='ai-box'>{answer}</div>", unsafe_allow_html=True)
 
 
-# =========================================================
+# ============================================================
 # FOOTER
-# =========================================================
-
+# ============================================================
+st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown(
     """
-    <div class="footer">
-        🎓 LearnPath AI
-        &nbsp; • &nbsp;
-        Collaborative Filtering
-        &nbsp; • &nbsp;
-        Matrix Factorization
-        &nbsp; • &nbsp;
-        Groq AI
+    <div style="text-align:center;color:#5f7fa6;font-size:10px;padding:8px;">
+        LearnPath AI · Collaborative Filtering · Matrix Factorization · Groq AI
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
