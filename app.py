@@ -39,21 +39,27 @@ st.markdown("""
 .hero {
     padding: 35px;
     border-radius: 25px;
-    background: linear-gradient(
-        135deg,
-        rgba(99,102,241,0.22),
-        rgba(168,85,247,0.16),
-        rgba(15,23,42,0.75)
-    );
-    border: 1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 15px 50px rgba(0,0,0,0.30);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(239, 68, 68, 0.30),
+            rgba(249, 115, 22, 0.25),
+            rgba(127, 29, 29, 0.45)
+        );
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.35);
     margin-bottom: 25px;
 }
 
 .hero h1 {
     font-size: 45px;
     margin-bottom: 8px;
-    background: linear-gradient(90deg, #a78bfa, #60a5fa, #c084fc);
+    background: linear-gradient(
+        90deg,
+        #f87171,
+        #fb923c,
+        #fbbf24
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
